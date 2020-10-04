@@ -9,7 +9,7 @@ import time    # for time.time()
 from datetime import datetime # datetime.isoformat() & datetime.utcnow()
 import socket  # for socket.timeout
 
-addresses = [
+servers = [
 	("us1.uncledane.com", 27015), # Los Angeles
 	("us2.uncledane.com", 27015), # Chicago
 	("us3.uncledane.com", 27015), # San Francisco
@@ -22,38 +22,38 @@ conn = sqlite3.connect("fantasytf2.db")
 cursor = conn.cursor()
 cursor.execute('''
 	CREATE TABLE IF NOT EXISTS playerinfo
-	(datetime real, name text, score int, duration real, map text, address text)
+	(datetime real, name text, score int, duration real, map text, server text)
 ''')
 
-def get_server_data(address):
+def get_server_data(server):
 	players = None
 	serverinfo = None
 	for x in range(2):
 		try:
-			players = a2s.players(address)
+			players = a2s.players(server)
 			break
 		except: # probably socket.timeout...
 			pass
 	if players:
 		for x in range(2):
 			try:
-				serverinfo = a2s.info(address)
+				serverinfo = a2s.info(server)
 				break
 			except: # probably socket.timeout...
 				pass
 	return (players, serverinfo)
 
 def grab_all_servers():
-	for address in addresses:
-		(players, serverinfo) = get_server_data(address)
+	for server in servers:
+		(players, serverinfo) = get_server_data(server)
 		if not players or not serverinfo:
 			print("[{}] {} skipped".format(
 				datetime.isoformat(datetime.utcnow()),
-				address
+				server
 			))
 			continue # skip I guess...
 		now = time.time()
-		fuckaddress = "{}:{}".format(address[0], address[1])
+		fuckaddress = "{}:{}".format(server[0], server[1])
 		players = list(map(
 			lambda x: (now, x.name, x.score, x.duration, serverinfo.map_name, fuckaddress),
 			filter(lambda x: x.name != "", players)
@@ -62,7 +62,7 @@ def grab_all_servers():
 		conn.commit()
 		print("[{}] {} retrieved {} players".format(
 			datetime.isoformat(datetime.utcnow()),
-			address,
+			server,
 			len(players)
 		))
 		time.sleep(0.1)
