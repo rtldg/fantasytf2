@@ -24,6 +24,10 @@ cursor.execute('''
 	CREATE TABLE IF NOT EXISTS playerinfo
 	(datetime real, name text, score int, duration real, map text, server text)
 ''')
+cursor.execute('''
+	CREATE TABLE IF NOT EXISTS fucky
+	(name text, score int)
+''')
 
 def get_server_data(server):
 	players = None
@@ -43,6 +47,7 @@ def get_server_data(server):
 				pass
 	return (players, serverinfo)
 
+server_lobby = {}
 def grab_all_servers():
 	for server in servers:
 		(players, serverinfo) = get_server_data(server)
@@ -51,7 +56,22 @@ def grab_all_servers():
 				datetime.isoformat(datetime.utcnow()),
 				server
 			))
-			continue # skip I guess...
+			continue
+
+		lobby = None
+		if not server in server_lobby:
+			server_lobby[server] = {"map": serverinfo.map_name, "players": {}}
+		lobby = server_lobby[server]
+
+		if lobby["map"] != serverinfo.map_name:
+			# Just changed maps. Log all the player scores THEN update scores...
+			cursor.executemany('INSERT INTO fucky VALUES (?,?)', list(lobby["players"].items()))
+			lobby["map"] = serverinfo.map_name
+			lobby["players"] = {}
+
+		for player in players:
+			lobby["players"][player.name] = player.score
+
 		now = time.time()
 		fuckaddress = "{}:{}".format(server[0], server[1])
 		players = list(map(
@@ -72,3 +92,9 @@ while True:
 	time.sleep(13.0) # bad luck number
 
 #conn.close()
+
+
+"""
+SELECT sum(score) FROM fucky WHERE name = "jake paul hater";
+"""
+
