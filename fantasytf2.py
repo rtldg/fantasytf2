@@ -8,6 +8,7 @@ import sqlite3
 import time    # for time.time()
 from datetime import datetime # datetime.isoformat() & datetime.utcnow()
 import socket  # for socket.timeout
+import sys # sys.argv
 
 servers = [
 	("us1.uncledane.com", 27015), # Los Angeles
@@ -87,11 +88,20 @@ def grab_all_servers():
 		))
 		time.sleep(0.1)
 
-while True:
-	grab_all_servers()
-	time.sleep(13.0) # bad luck number
-
-#conn.close()
+# I don't know SQL so fuck me...
+if len(sys.argv) > 1 and sys.argv[1] == "dump":
+	cursor.execute("SELECT DISTINCT name FROM fucky WHERE name != '' ORDER BY name ASC")
+	names = cursor.fetchall()
+	shit = []
+	for d in names:
+		cursor.execute("SELECT name, SUM(SCORE) FROM fucky WHERE name = (?)", d)
+		shit.append(cursor.fetchone())
+	shit.sort(reverse = True, key = lambda x: x[1])
+	print(shit)
+else:
+	while True:
+		grab_all_servers()
+		time.sleep(13.0) # bad luck number
 
 
 """
